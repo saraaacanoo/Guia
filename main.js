@@ -6,17 +6,30 @@ require([
     'esri/renderers/UniqueValueRenderer',
     'esri/symbols/SimpleLineSymbol',
     'esri/widgets/Search',
-], (Map, MapView, FeatureLayer, LayerList, UniqueValueRenderer, SimpleLineSymbol, Search) => {
+    "esri/layers/VectorTileLayer",
+    "esri/Basemap"
+], (Map, MapView, FeatureLayer, LayerList, UniqueValueRenderer, SimpleLineSymbol, Search, VectorTileLayer, Basemap) => {
 
+    const mapaBase = new VectorTileLayer({
+        portalItem: {
+            id: "6843b92f347a41abb378dd26ced81a94" 
+        }
+    });
+
+    const customBasemap = new Basemap({
+        baseLayers: [mapaBase],
+        title: 'DarkSky'
+    });
+    
     const map = new Map({
-        basemap: 'dark-gray'
+        basemap: customBasemap
     });
 
     const view = new MapView({
         container: 'viewDiv',
         map: map,  
         center: [-6.6, 38.8],
-        zoom: 7
+        zoom: 7,
     });
 
     const boton = document.getElementById('Boton').addEventListener('click', ()=>{
@@ -337,6 +350,28 @@ require([
         view: view
     });
     view.ui.add(layerList, 'top-right');
+
+    view.watch("scale", function(newScale) {
+        const visibilityScale = 200000; 
+    
+        if (newScale <= visibilityScale) {
+            poiTiendasFL.visible = true;
+            poiAlojamientosFL.visible = true;
+            poiMonumentosFL.visible = true;
+            poiRestauracionFL.visible = true;
+            poiServiciosEmergenciaFL.visible = true;
+            caminosFL.visible = true;
+            parkingsFL.visible = true
+        } else {
+            poiTiendasFL.visible = false;
+            poiAlojamientosFL.visible = false;
+            poiMonumentosFL.visible = false;
+            poiRestauracionFL.visible = false;
+            poiServiciosEmergenciaFL.visible = false;
+            caminosFL.visible = false;
+            parkingsFL.visible = false
+        }
+    });
     
     const searchWidget = new Search({
         view: view,
