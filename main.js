@@ -7,8 +7,12 @@ require([
     'esri/symbols/SimpleLineSymbol',
     'esri/widgets/Search',
     "esri/layers/VectorTileLayer",
-    "esri/Basemap"
-], (Map, MapView, FeatureLayer, LayerList, UniqueValueRenderer, SimpleLineSymbol, Search, VectorTileLayer, Basemap) => {
+    "esri/Basemap",
+    'esri/widgets/Sketch',
+    'esri/Graphic',
+    'esri/layers/GraphicsLayer',
+    "esri/widgets/Sketch/SketchViewModel"
+], (Map, MapView, FeatureLayer, LayerList, UniqueValueRenderer, SimpleLineSymbol, Search, VectorTileLayer, Basemap,Sketch, Graphic, GraphicsLayer, SketchViewModel) => {
 
     const mapaBase = new VectorTileLayer({
         portalItem: {
@@ -372,7 +376,70 @@ require([
             parkingsFL.visible = false
         }
     });
-    
+
+    const capaGrafica = new GraphicsLayer(
+        {title: 'POIs seleccionados'}
+    );
+    map.add(capaGrafica);
+
+    const sketchWidget = new Sketch({
+        view: view,
+        layer: capaGrafica,
+        creationMode: "single",
+        visibleElements: {
+        createTools: {
+            point: true,
+            polyline: false,
+            polygon: false,
+            rectangle: false,
+            circle: false
+        },
+        selectionTools: {
+            "rectangle-selection": false,
+            "lasso-selection": false
+        },
+        undoRedoMenu: false
+        }
+    });
+
+    view.ui.add(sketchWidget, "bottom-right");
+
+    sketchWidget.on("create", (event) => {
+        if (event.state === "complete") {
+        capaGrafica.removeAll();
+        const queryParams = {
+            geometry: event.graphic.geometry,
+            distance: 1,
+            units: "kilometers",
+            spatialRelationship: "intersects",
+            returnGeometry: true,
+            outFields: ["*"]
+        };
+
+        const capasPOIs = [poiTiendasFL, poiAlojamientosFL, poiMonumentosFL, poiRestauracionFL, poiServiciosEmergenciaFL];
+
+        capasPOIs.map((capas) => {
+            capas.queryFeatures(queryParams).then((resultado) => {
+                resultado.features.map((feature) => {
+                feature.popupTemplate = capas.popupTemplate;
+                feature.symbol = {
+                    type: "simple-marker",
+                    color: [255, 0, 0],
+                    style: "circle",
+                    size: 10,
+                    outline: {
+                    color: "black",
+                    width: 1
+                    }
+                };
+                capaGrafica.add(feature);
+
+            });
+            })
+        });
+        }
+    });
+
     const searchWidget = new Search({
         view: view,
         includeDefaultSources: false,
